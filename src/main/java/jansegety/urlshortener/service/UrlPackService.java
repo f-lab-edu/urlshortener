@@ -19,6 +19,4 @@ public interface UrlPackService {
 	
 	public Optional<UrlPack> findByValueEncoded(String shortUrl);
 
-	 
-	
 }

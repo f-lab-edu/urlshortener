@@ -1,5 +1,7 @@
 package jansegety.urlshortener.controller.jsondto;
 
+import jansegety.urlshortener.entity.UrlPack;
+import jansegety.urlshortener.util.UrlMaker;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
@@ -11,14 +13,25 @@ public class CreateShortUrlDto {
 	
 	private Result result;
 	
+	public static CreateShortUrlDto makeCreateShortUrlDto(UrlPack urlPack) {
+		CreateShortUrlDto createShortUrlDto = new CreateShortUrlDto();
+		
+		Result result = createShortUrlDto.new Result();
+		result.setOrginalUrl(urlPack.getOriginalUrl());
+		result.setShortenedUrl(
+				UrlMaker.makeUrlWithDomain(urlPack.getValueCompressed()));
+		
+		createShortUrlDto.setResult(result);
+		return createShortUrlDto;
+	}
+	
 	@Getter
 	@Setter
 	@ToString
 	public class Result{
 		
-		private String valueEncoded;
-		private String url;
-		private String orgUrl;
+		private String shortenedUrl;
+		private String orginalUrl;	
 		
 	}
 	

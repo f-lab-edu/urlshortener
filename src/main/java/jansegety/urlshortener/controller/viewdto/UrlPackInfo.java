@@ -9,10 +9,10 @@ import lombok.ToString;
 @Setter
 @ToString
 @EqualsAndHashCode
-public class UrlInfoForUrlPackListDto {
+public class UrlPackInfo {
 
 	private String originalUrl;
-	private String shortUrl;
+	private String shortenedUrl;
 	private int requstNum;
 	
 }

@@ -4,6 +4,8 @@ import java.util.Optional;
 
 import javax.servlet.http.HttpServletResponse;
 
+import static javax.servlet.http.HttpServletResponse.*;
+
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -26,14 +28,14 @@ public class RedirectController {
 		Optional<UrlPack> opUrlPack = urlPackService.findByValueEncoded(valueEncoded);
 		
 		if(opUrlPack.isEmpty()){
-			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+			response.setStatus(SC_BAD_REQUEST);
 			return ;
 		}
 		
 		UrlPack urlPack = opUrlPack.get();
 		urlPack.setRequestNum(urlPack.getRequestNum()+1);
 		
-		response.setStatus(HttpServletResponse.SC_MOVED_PERMANENTLY);
+		response.setStatus(SC_MOVED_PERMANENTLY);
 		response.setHeader("Location", urlPack.getOriginalUrl());
 		
 	}

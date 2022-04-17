@@ -32,6 +32,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
    
     @Autowired
     private UserService userService;
+    
     @Autowired
     private ClientApplicationService clientApplicationService;
     

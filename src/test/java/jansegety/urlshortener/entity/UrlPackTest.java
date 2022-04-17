@@ -49,7 +49,7 @@ class UrlPackTest {
 		
 		String encodedValue = encoder.encoding(12345L);
 		
-		assertThat(urlPack.getValueEncoded(), is(equalTo(encodedValue)));
+		assertThat(urlPack.getValueCompressed(), is(equalTo(encodedValue)));
 		
 	}
 	
@@ -61,7 +61,7 @@ class UrlPackTest {
 		urlPack.setOriginalUrl("AAA.long.url");
 		
 		assertThrows(IllegalArgumentException.class, 
-				()->urlPack.requestShortUrlWithoriginalUrl("BBB.long.url"));
+				()->urlPack.requestShortUrlWithOriginalUrl("BBB.long.url"));
 	}
 	
 

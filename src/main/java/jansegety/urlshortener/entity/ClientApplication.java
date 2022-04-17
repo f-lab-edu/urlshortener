@@ -1,5 +1,6 @@
 package jansegety.urlshortener.entity;
 
+import static jansegety.urlshortener.error.message.SimpleEntityMessage.*;
 import java.util.UUID;
 
 import javax.persistence.Column;
@@ -10,11 +11,8 @@ import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 
-import lombok.Getter;
-
 @Table(name = "client_application")
 @Entity
-@Getter
 public class ClientApplication {
 	
 	//객체에서 UUID로 할당된다.
@@ -36,7 +34,8 @@ public class ClientApplication {
 
 	public void setId(UUID id){
 		if(this.id != null)
-			throw new IllegalStateException("id가 이미 할당되었습니다.");
+			throw new IllegalStateException(
+					ID_HAS_ALREADY_BEEN_ASSIGNED.getMessage());
 		
 		this.id = id;
 	}
@@ -55,6 +54,22 @@ public class ClientApplication {
 	
 	public boolean equalsClientSecret(UUID clientSecret) {
 		return this.clientSecret.equals(clientSecret);
+	}
+	
+	public UUID getId() {
+		return id;
+	}
+
+	public String getName() {
+		return name;
+	}
+
+	public UUID getClientSecret() {
+		return clientSecret;
+	}
+
+	public User getUser() {
+		return user;
 	}
 
 	@Override

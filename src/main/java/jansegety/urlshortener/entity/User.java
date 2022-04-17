@@ -1,6 +1,9 @@
 package jansegety.urlshortener.entity;
 
+import static jansegety.urlshortener.error.message.SimpleEntityMessage.*;
+
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import javax.persistence.Column;
@@ -10,11 +13,8 @@ import javax.persistence.Id;
 import javax.persistence.OneToMany;
 import javax.persistence.Table;
 
-import lombok.Getter;
-
 @Table(name = "user")
 @Entity
-@Getter
 public class User {
 	
 	@Id @GeneratedValue
@@ -34,10 +34,9 @@ public class User {
 	List<ClientApplication> clientApplicationList = new ArrayList<>();
 	
 	public void setId(Long id) {
-		
-		if(this.id != null)
-			throw new IllegalStateException("id가 이미 할당되었습니다.");
-		
+		if(this.id != null) {
+			throw new IllegalStateException(
+					ID_HAS_ALREADY_BEEN_ASSIGNED.getMessage()); }
 		this.id = id;
 	}
 	
@@ -47,6 +46,35 @@ public class User {
 	
 	public void setPassword(String password) {
 		this.password = password;
+	}
+	
+	public void setUrlPackList(List<UrlPack> urlPackList) {
+		this.urlPackList = urlPackList;
+	}
+	
+	public void setClientApplicationList(
+			List<ClientApplication> clientApplicationList) {
+		this.clientApplicationList = clientApplicationList;
+	}
+
+	public List<UrlPack> getUrlPackList() {
+		return Collections.unmodifiableList(urlPackList);
+	}
+
+	public List<ClientApplication> getClientApplicationList() {
+		return Collections.unmodifiableList(clientApplicationList);
+	}
+
+	public Long getId() {
+		return id;
+	}
+
+	public String getEmail() {
+		return email;
+	}
+
+	public String getPassword() {
+		return password;
 	}
 
 	@Override
@@ -64,7 +92,8 @@ public class User {
 
 	@Override
 	public String toString() {
-		return "User [id=" + id + ", email=" + email + ", password=" + password + "]";
+		return "User [id=" + id + ", email=" + email 
+				+ ", password=" + password + "]";
 	}
 	
 }

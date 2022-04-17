@@ -11,14 +11,13 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
-public class ImplClientApplicationService implements ClientApplicationService{
+public class SimpleClientApplicationService implements ClientApplicationService {
 
 	private final ClientApplicationRepository clientApplicationRepository;
 	
 	@Override
 	public void save(ClientApplication clientApplication) {
 		clientApplicationRepository.save(clientApplication);
-		
 	}
 
 	@Override

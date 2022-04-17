@@ -19,12 +19,11 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.servlet.ViewResolver;
 import org.springframework.web.servlet.view.InternalResourceViewResolver;
 
-import jansegety.urlshortener.controller.viewdto.UrlInfoForUrlPackListDto;
+import jansegety.urlshortener.controller.viewdto.UrlPackInfo;
 import jansegety.urlshortener.entity.UrlPack;
 import jansegety.urlshortener.entity.User;
 import jansegety.urlshortener.repository.UrlPackRepository;
 import jansegety.urlshortener.service.UrlPackService;
-import jansegety.urlshortener.service.UserService;
 import jansegety.urlshortener.service.encoding.Encoder;
 import jansegety.urlshortener.util.UrlMaker;
 
@@ -39,9 +38,6 @@ class UrlPackControllerTest {
 	
 	@Autowired
 	private UrlPackService urlPackService;
-	
-	@Autowired
-	private UserService userService;
 	
 	@Autowired
 	private Encoder<Long, String> encoder;
@@ -60,19 +56,16 @@ class UrlPackControllerTest {
 			.build();
 		
 		urlPackRepository.deleteAll();
-		UrlPack testUrlPack = new UrlPack();
-		testUrlPack.setOriginalUrl(LONG_URL);
 		
 		//user 생성
 		testUser = new User();
-		userService.save(testUser);
 		
-		//user와 urlpack 연결
-		testUrlPack.setUser(testUser);
-		
-		//urlpack 등록
-		urlPackService.regist(testUrlPack);
-		testUrlPack.createValueEncoded(encoder);
+		UrlPack
+		.makeUrlPackRegisteredAndHavingValueCompressed(
+				testUser, 
+				LONG_URL, 
+				urlPackService, 
+				encoder);
 
 	}
 	
@@ -122,10 +115,10 @@ class UrlPackControllerTest {
 				.sessionAttr("userId", 1L)
 				.requestAttr("loginUser", testUser))
 			.andExpect(model()
-				.attribute("registFormDto", 
+				.attribute("urlPackRegistConfirmationDto", 
 					hasProperty("originalUrl", equalTo(LONG_URL))))
 			.andExpect(model()
-				.attribute("registFormDto", 
+				.attribute("urlPackRegistConfirmationDto", 
 					hasProperty("shortUrl", 
 						equalTo(UrlMaker.makeUrlWithDomain(encoder.encoding(1L)))))); 
 						//B is Encoded Value by base62 with 1L
@@ -160,19 +153,19 @@ class UrlPackControllerTest {
 				.sessionAttr("userId", 1L)
 				.requestAttr("loginUser", testUser));
 		
-		UrlInfoForUrlPackListDto urlInfo1 = new UrlInfoForUrlPackListDto();
+		UrlPackInfo urlInfo1 = new UrlPackInfo();
 		urlInfo1.setOriginalUrl("AAA.AAA.AAA");
-		urlInfo1.setShortUrl(UrlMaker.makeUrlWithDomain(encoder.encoding(1L)));
+		urlInfo1.setShortenedUrl(UrlMaker.makeUrlWithDomain(encoder.encoding(1L)));
 		urlInfo1.setRequstNum(0);
 		
-		UrlInfoForUrlPackListDto urlInfo2 = new UrlInfoForUrlPackListDto();
+		UrlPackInfo urlInfo2 = new UrlPackInfo();
 		urlInfo2.setOriginalUrl("BBB.BBB.BBB");
-		urlInfo2.setShortUrl(UrlMaker.makeUrlWithDomain(encoder.encoding(2L)));
+		urlInfo2.setShortenedUrl(UrlMaker.makeUrlWithDomain(encoder.encoding(2L)));
 		urlInfo2.setRequstNum(0);
 		
 		mock.perform(get("/urlpack/list").requestAttr("loginUser", testUser))
 			.andExpect(model().attribute("urlPackListDto", 
-				hasProperty("urlInfoList", 
+				hasProperty("urlPackInfoList", 
 					hasItems(urlInfo1, urlInfo2))));
 		
 	}

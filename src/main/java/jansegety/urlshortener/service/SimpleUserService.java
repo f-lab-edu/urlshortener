@@ -11,7 +11,7 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
-public class ImplUserService implements UserService {
+public class SimpleUserService implements UserService {
 	
 	private final UserRepository userRepository;
 	

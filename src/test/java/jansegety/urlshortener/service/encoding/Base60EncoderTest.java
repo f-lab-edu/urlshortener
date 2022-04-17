@@ -7,10 +7,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+public class Base60EncoderTest {
 
-class Base62EncoderTest {
-	
-	Base62Encoder encoder = new Base62Encoder();
+	Base60Encoder encoder = new Base60Encoder();
 	
 	@Test
 	@DisplayName("인코딩 한 값을 다시 디코딩하면 소스와 같아야 한다.")
@@ -23,10 +22,10 @@ class Base62EncoderTest {
 	}
 	
 	@Test
-	@DisplayName("단축 URL의 id타입인 Long의 최대값을 Base62Encoder 압축했을 때 12자리 이하여야 한다.")
+	@DisplayName("단축 URL의 id타입인 Long의 최대값을 Base60Encoder 압축했을 때 12자리 이하여야 한다.")
 	void when_encodneLongMaxValue_then_returnValueLessThen12Length() {
 		String valueCompressed = encoder.encoding(Long.MAX_VALUE);
-		assertTrue(valueCompressed.length() < 12);
+		assertTrue(valueCompressed.length() < 12);	
 	}
-
+	
 }

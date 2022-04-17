@@ -12,7 +12,7 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
-public class ImplUrlPackService implements UrlPackService {
+public class SimpleUrlPackService implements UrlPackService {
 
 	private final UrlPackRepository urlPackRepository;
 	
@@ -29,7 +29,7 @@ public class ImplUrlPackService implements UrlPackService {
 	@Override
 	public Optional<UrlPack> findByValueEncoded(String valueEncoded) {
 		UrlPack urlPackOrNull = findAll().stream()
-			.filter(urlPack -> urlPack.getValueEncoded()
+			.filter(urlPack -> urlPack.getValueCompressed()
 			.equals(valueEncoded))
 			.findAny()
 			.orElse(null);

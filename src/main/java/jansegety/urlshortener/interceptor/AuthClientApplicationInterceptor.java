@@ -1,5 +1,7 @@
 package jansegety.urlshortener.interceptor;
 
+import static jansegety.urlshortener.error.message.ClientApplicationMessage.*;
+
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -41,7 +43,8 @@ public class AuthClientApplicationInterceptor implements HandlerInterceptor {
 	
 		//urlshortener-client-id 혹은 urlshortener-client-secret가 없다면
 		if(!StringUtils.hasText(clientId)||!StringUtils.hasText(clientSecret)) {
-			throw new IllegalArgumentException("잘못된 헤더");
+			throw new IllegalArgumentException(
+					CLIENT_ID_OR_SECRET_IS_REQUIRED.getMessage());
 		}
 		
 		UUID clientIdUUID = UUID.fromString(clientId);
@@ -52,19 +55,22 @@ public class AuthClientApplicationInterceptor implements HandlerInterceptor {
 		
 		//일치하는 client가 없다면
 		if(clientApplicationOp.isEmpty()) {
-			throw new InvalidClientException("잘못된 client");
+			throw new InvalidClientException(
+					NO_MATCHING_CLIENT_FOUND.getMessage());
 		}
 		
 		//secret이 일치하지 않는다면
 		ClientApplication clientApplication = clientApplicationOp.get();
 		if(!clientApplication.equalsClientSecret(clientSecretUUID)) {
-			throw new InvalidSecretException("잘못된 secret");
+			throw new InvalidSecretException(
+					NO_MATCHING_SECRET_FOUND.getMessage());
 		}
 			
 		//user 검증 로직
 		User clientUser = clientApplication.getUser();
 		if(clientUser == null) {
-			throw new IllegalStateException("클라이언트에 유저 정보 없음");
+			throw new IllegalStateException(
+					CLIENT_HAS_NO_USER.getMessage());
 		}
 		
 		//client를 등록한 유저 세션에 등록
