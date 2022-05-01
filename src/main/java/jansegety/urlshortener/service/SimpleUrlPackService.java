@@ -27,14 +27,20 @@ public class SimpleUrlPackService implements UrlPackService {
 	}
 
 	@Override
-	public Optional<UrlPack> findByValueEncoded(String valueEncoded) {
-		UrlPack urlPackOrNull = findAll().stream()
-			.filter(urlPack -> urlPack.getValueCompressed()
-			.equals(valueEncoded))
-			.findAny()
-			.orElse(null);
+	public Optional<UrlPack> findByValueCompressed(String valueEncoded) {
 		
-		return Optional.ofNullable(urlPackOrNull);
+		Optional<UrlPack> urlPackOrNull = findAll().stream()
+			.filter(urlPack -> { 
+					//getValueCompressed()가 null일 수 있기 때문에 반드시 체크해줘야 한다.
+					//예를 들어서 urlPack이 아무것도 없을때 호출되면 NullPointerException이 발생한다.
+					if(urlPack.getValueCompressed() == null) {
+						return false;
+					}
+					return urlPack.getValueCompressed().equals(valueEncoded); 
+				})
+			.findAny();
+		
+		return urlPackOrNull;
 	}
 
 	@Override

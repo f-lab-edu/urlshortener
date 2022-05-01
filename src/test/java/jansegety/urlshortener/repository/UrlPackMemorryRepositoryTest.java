@@ -1,16 +1,13 @@
 package jansegety.urlshortener.repository;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.hamcrest.CoreMatchers.*;
+import static org.hamcrest.MatcherAssert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import jansegety.urlshortener.entity.UrlPack;
-import jansegety.urlshortener.service.encoding.Base62Encoder;
-import jansegety.urlshortener.service.encoding.Encoder;
 
 class UrlPackMemorryRepositoryTest {
 	
@@ -22,7 +19,6 @@ class UrlPackMemorryRepositoryTest {
 		
 		UrlPack urlPack = new UrlPack();
 		urlPack.setId(1L);
-		urlPack.createValueEncoded(new Base62Encoder());
 		
 		UrlPack IdAssignedUrlPack = urlPack;
 		

@@ -3,7 +3,7 @@ package jansegety.urlshortener.controller;
 import static jansegety.urlshortener.controller.jsondto.CreateShortUrlDto.makeCreateShortUrlDto;
 import static jansegety.urlshortener.entity.UrlPack.makeUrlPackRegisteredAndHavingValueCompressed;
 
-
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -14,7 +14,10 @@ import jansegety.urlshortener.controller.jsondto.CreateShortUrlDto;
 import jansegety.urlshortener.entity.UrlPack;
 import jansegety.urlshortener.entity.User;
 import jansegety.urlshortener.service.UrlPackService;
+import jansegety.urlshortener.service.compressing.ValueCompressedMaker;
+import jansegety.urlshortener.service.compressing.sourceprovider.CompressingSourceProvider;
 import jansegety.urlshortener.service.encoding.Encoder;
+import jansegety.urlshortener.service.hashing.Hasher;
 import lombok.RequiredArgsConstructor;
 
 
@@ -24,7 +27,10 @@ import lombok.RequiredArgsConstructor;
 public class UrlPackJsonController {
 
 	private final UrlPackService urlPackService;
-	private final Encoder<Long, String> encoder;
+	
+	private final ValueCompressedMaker<String, String> valueCompressedMaker;
+	
+	private final CompressingSourceProvider<String> compressingSourceProvider;
 	
 	
 	/*
@@ -42,8 +48,9 @@ public class UrlPackJsonController {
 			makeUrlPackRegisteredAndHavingValueCompressed(
 				clientUser, 
 				originalUrl, 
-				urlPackService, 
-				encoder);
+				urlPackService,
+				compressingSourceProvider,
+				valueCompressedMaker);
 	
 		CreateShortUrlDto createShortUrlDto = makeCreateShortUrlDto(urlPack);
 		

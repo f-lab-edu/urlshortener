@@ -1,13 +1,14 @@
 package jansegety.urlshortener.controller;
 
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.hasItems;
-import static org.hamcrest.Matchers.hasProperty;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
+import static org.hamcrest.MatcherAssert.*;
+import static org.hamcrest.Matchers.*;
+import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
+import java.util.List;
+import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -15,17 +16,22 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.servlet.ViewResolver;
 import org.springframework.web.servlet.view.InternalResourceViewResolver;
 
 import jansegety.urlshortener.controller.viewdto.UrlPackInfo;
+import jansegety.urlshortener.controller.viewdto.UrlPackListDto;
+import jansegety.urlshortener.controller.viewdto.UrlPackRegistConfirmationDto;
 import jansegety.urlshortener.entity.UrlPack;
 import jansegety.urlshortener.entity.User;
 import jansegety.urlshortener.repository.UrlPackRepository;
 import jansegety.urlshortener.service.UrlPackService;
-import jansegety.urlshortener.service.encoding.Encoder;
-import jansegety.urlshortener.util.UrlMaker;
+import jansegety.urlshortener.service.compressing.ValueCompressedMaker;
+import jansegety.urlshortener.service.compressing.sourceprovider.CompressingSourceProvider;
+import jansegety.urlshortener.testutil.constant.RegularExpression;
+import jansegety.urlshortener.testutil.constant.URL;
 
 @SpringBootTest
 class UrlPackControllerTest {
@@ -40,11 +46,13 @@ class UrlPackControllerTest {
 	private UrlPackService urlPackService;
 	
 	@Autowired
-	private Encoder<Long, String> encoder;
+	private ValueCompressedMaker<String, String> valueCompressedMaker;
 	
 	private MockMvc mock;
 	private User testUser;
-	private final String LONG_URL =  "WWW.ABCDEFG.HIJKLMNOP";
+	private final String LONG_URL =  URL.MOCK_ORIGINAL_URL;
+	
+	private final String regex = RegularExpression.VALUE_COMPRESSED_FORMAT_WITH_PRIFIX;
 	
 	
 	@BeforeEach
@@ -60,12 +68,19 @@ class UrlPackControllerTest {
 		//user 생성
 		testUser = new User();
 		
+		CompressingSourceProvider<String> mockCompressiongSourceProvider =
+				mock(CompressingSourceProvider.class);
+			
+		String mockUUID = UUID.randomUUID().toString().replace("-", "");
+		when(mockCompressiongSourceProvider.getSource()).thenReturn(mockUUID);
+		
 		UrlPack
 		.makeUrlPackRegisteredAndHavingValueCompressed(
 				testUser, 
 				LONG_URL, 
-				urlPackService, 
-				encoder);
+				urlPackService,
+				mockCompressiongSourceProvider,
+				valueCompressedMaker);
 
 	}
 	
@@ -94,7 +109,7 @@ class UrlPackControllerTest {
 	void when_requestCreateNewEntityWithNoException_then_createFuncReturnStringUrlPackRegistConfrimation() 
 			throws Exception {
 		
-		mock.perform(post("/urlpack/registform")
+		mock.perform(post("/urlpack/regist")
 				.param("originalUrl", LONG_URL)
 				.sessionAttr("userId", 1L)
 				.requestAttr("loginUser", testUser))
@@ -107,22 +122,25 @@ class UrlPackControllerTest {
 	@DisplayName("create 함수는 입력받은 originalUrl과 단축된 shortUrl을 가지는 RegistFormDto를 모델에 포함")
 	void when_requestCreateNewEntityWithNoException_then_modelHasRegistFormDtoObjectWithoriginalUrlAndShortUrl() 
 			throws Exception {
-		
-		urlPackRepository.deleteAll();
-		    
-		mock.perform(post("/urlpack/registform")
+	
+		MvcResult mvcResult = mock.perform(post("/urlpack/regist")
 				.param("originalUrl", LONG_URL)
 				.sessionAttr("userId", 1L)
 				.requestAttr("loginUser", testUser))
-			.andExpect(model()
-				.attribute("urlPackRegistConfirmationDto", 
-					hasProperty("originalUrl", equalTo(LONG_URL))))
-			.andExpect(model()
-				.attribute("urlPackRegistConfirmationDto", 
-					hasProperty("shortUrl", 
-						equalTo(UrlMaker.makeUrlWithDomain(encoder.encoding(1L)))))); 
-						//B is Encoded Value by base62 with 1L
-	
+				.andDo(print())
+				.andReturn();
+		
+		UrlPackRegistConfirmationDto urlPackRegistConfirmationDto = 
+			(UrlPackRegistConfirmationDto)mvcResult
+				.getModelAndView()
+				.getModel()
+				.get("urlPackRegistConfirmationDto");
+		
+		String originalUrl = urlPackRegistConfirmationDto.getOriginalUrl();
+		String shortUrl = urlPackRegistConfirmationDto.getShortUrl();
+		
+		assertThat(originalUrl, equalTo(LONG_URL));
+		assertThat(shortUrl, matchesPattern(regex));
 	}
 	
 	@Test
@@ -143,31 +161,40 @@ class UrlPackControllerTest {
 		
 		urlPackRepository.deleteAll();
 		
-		mock.perform(post("/urlpack/registform")
-				.param("originalUrl", "AAA.AAA.AAA")
+		final String ORIGIANL_URL_0 = "AAA.AAA.AAA";
+		final String ORIGIANL_URL_1 = "BBB.BBB.BBB";
+		
+		mock.perform(post("/urlpack/regist")
+				.param("originalUrl", ORIGIANL_URL_0)
 				.sessionAttr("userId", 1L)
 				.requestAttr("loginUser", testUser));
 		
-		mock.perform(post("/urlpack/registform")
-				.param("originalUrl", "BBB.BBB.BBB")
+		mock.perform(post("/urlpack/regist")
+				.param("originalUrl", ORIGIANL_URL_1)
 				.sessionAttr("userId", 1L)
 				.requestAttr("loginUser", testUser));
 		
-		UrlPackInfo urlInfo1 = new UrlPackInfo();
-		urlInfo1.setOriginalUrl("AAA.AAA.AAA");
-		urlInfo1.setShortenedUrl(UrlMaker.makeUrlWithDomain(encoder.encoding(1L)));
-		urlInfo1.setRequstNum(0);
+		MvcResult mvcResult = 
+			mock.perform(get("/urlpack/list")
+				.requestAttr("loginUser", testUser))
+				.andReturn();
 		
-		UrlPackInfo urlInfo2 = new UrlPackInfo();
-		urlInfo2.setOriginalUrl("BBB.BBB.BBB");
-		urlInfo2.setShortenedUrl(UrlMaker.makeUrlWithDomain(encoder.encoding(2L)));
-		urlInfo2.setRequstNum(0);
+		UrlPackListDto urlPackListDto = 
+			(UrlPackListDto)mvcResult
+				.getModelAndView()
+				.getModel()
+				.get("urlPackListDto");
 		
-		mock.perform(get("/urlpack/list").requestAttr("loginUser", testUser))
-			.andExpect(model().attribute("urlPackListDto", 
-				hasProperty("urlPackInfoList", 
-					hasItems(urlInfo1, urlInfo2))));
+		List<UrlPackInfo> urlPackInfoList = urlPackListDto.getUrlPackInfoList();
+		UrlPackInfo urlPackInfo0 = urlPackInfoList.get(0);
+		assertThat(urlPackInfo0.getOriginalUrl(), equalTo(ORIGIANL_URL_0));
+		assertThat(urlPackInfo0.getRequstNum(),  equalTo(0));
+		assertThat(urlPackInfo0.getShortenedUrl(), matchesPattern(regex));
 		
+		UrlPackInfo urlPackInfo1 = urlPackInfoList.get(1);
+		assertThat(urlPackInfo1.getOriginalUrl(), equalTo(ORIGIANL_URL_1));
+		assertThat(urlPackInfo1.getRequstNum(),  equalTo(0));
+		assertThat(urlPackInfo1.getShortenedUrl(), matchesPattern(regex));
 	}
 
 }

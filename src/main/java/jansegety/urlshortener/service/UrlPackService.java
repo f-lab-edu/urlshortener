@@ -17,6 +17,6 @@ public interface UrlPackService {
 	
 	public List<UrlPack> findByUser(User user);
 	
-	public Optional<UrlPack> findByValueEncoded(String shortUrl);
+	public Optional<UrlPack> findByValueCompressed(String shortUrl);
 
 }

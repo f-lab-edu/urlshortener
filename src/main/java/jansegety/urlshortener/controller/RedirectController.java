@@ -25,7 +25,7 @@ public class RedirectController {
 	public void redirectTooriginalUrl(@PathVariable String valueEncoded, 
 			HttpServletResponse response) {
 		
-		Optional<UrlPack> opUrlPack = urlPackService.findByValueEncoded(valueEncoded);
+		Optional<UrlPack> opUrlPack = urlPackService.findByValueCompressed(valueEncoded);
 		
 		if(opUrlPack.isEmpty()){
 			response.setStatus(SC_BAD_REQUEST);

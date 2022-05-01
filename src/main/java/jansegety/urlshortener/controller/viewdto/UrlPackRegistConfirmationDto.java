@@ -14,12 +14,12 @@ public class UrlPackRegistConfirmationDto {
 	private String originalUrl;
 	private String shortUrl;
 	
-	public static UrlPackRegistConfirmationDto makeRgistFormDto(UrlPack urlPack) {
-		UrlPackRegistConfirmationDto registFormDto = new UrlPackRegistConfirmationDto();
-		registFormDto.setOriginalUrl(urlPack.getOriginalUrl());
-		registFormDto.setShortUrl(UrlMaker.makeUrlWithDomain(urlPack.getValueCompressed()));
+	public static UrlPackRegistConfirmationDto makeRegistConfirmationDto(UrlPack urlPack) {
+		UrlPackRegistConfirmationDto registConfirmationDto = new UrlPackRegistConfirmationDto();
+		registConfirmationDto.setOriginalUrl(urlPack.getOriginalUrl());
+		registConfirmationDto.setShortUrl(UrlMaker.makeUrlWithDomain(urlPack.getValueCompressed()));
 		
-		return registFormDto;
+		return registConfirmationDto;
 	}
 	
 }

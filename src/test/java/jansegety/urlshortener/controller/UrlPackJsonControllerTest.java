@@ -4,7 +4,9 @@ import static jansegety.urlshortener.error.message.ClientApplicationMessage.*;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.text.MatchesPattern.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -28,6 +30,8 @@ import jansegety.urlshortener.interceptor.AuthClientApplicationInterceptor;
 import jansegety.urlshortener.repository.ClientApplicationRepository;
 import jansegety.urlshortener.repository.UrlPackRepository;
 import jansegety.urlshortener.service.encoding.Encoder;
+import jansegety.urlshortener.testutil.constant.RegularExpression;
+import jansegety.urlshortener.testutil.constant.URL;
 import jansegety.urlshortener.util.UrlMaker;
 
 @SpringBootTest
@@ -53,7 +57,7 @@ class UrlPackJsonControllerTest {
 										MediaType.APPLICATION_JSON.getSubtype(),
 										Charset.forName("utf8"));
 	
-	private final String LONG_URL = "http://www.long.www.long.www.long.wwwlong";
+	private final String LONG_URL = URL.MOCK_ORIGINAL_URL;
 	
 	@BeforeEach
 	public void setup() {
@@ -83,13 +87,17 @@ class UrlPackJsonControllerTest {
 		//clientApplication 영속화
 		clientApplicationRepository.save(clientApplication); 
 		
+		final String regex = RegularExpression.VALUE_COMPRESSED_FORMAT_WITH_PRIFIX;
+		
 		mvc.perform(post("/urlpack/util/shorturl").param("url",LONG_URL).accept(jsonType)
 				.header("urlshortener-client-id", clientApplication.getId().toString())
 				.header("urlshortener-client-secret", clientApplication.getClientSecret().toString()))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.result.orginalUrl", is(LONG_URL)))
-			.andExpect(jsonPath("$.result.shortenedUrl", is(UrlMaker.makeUrlWithDomain(encoder.encoding(1L)))));
-		
+			.andExpect(jsonPath("$.result.shortenedUrl").exists())
+			.andExpect(jsonPath("$.result.shortenedUrl", matchesPattern(regex)))
+			.andDo(print());
+			
 	}
 	
 	@Test
@@ -134,7 +142,6 @@ class UrlPackJsonControllerTest {
 			.hasCause(
 				new InvalidClientException(
 					NO_MATCHING_CLIENT_FOUND.getMessage()));
-
 	}
 	
 	

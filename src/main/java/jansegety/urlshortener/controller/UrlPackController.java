@@ -1,7 +1,7 @@
 package jansegety.urlshortener.controller;
 
 import static jansegety.urlshortener.controller.viewdto.UrlPackListDto.makeUrlPackListDto;
-import static jansegety.urlshortener.controller.viewdto.UrlPackRegistConfirmationDto.makeRgistFormDto;
+import static jansegety.urlshortener.controller.viewdto.UrlPackRegistConfirmationDto.makeRegistConfirmationDto;
 import static jansegety.urlshortener.entity.UrlPack.makeUrlPackRegisteredAndHavingValueCompressed;
 import static org.springframework.web.bind.annotation.RequestMethod.*;
 
@@ -19,7 +19,10 @@ import jansegety.urlshortener.controller.viewdto.UrlPackRegistConfirmationDto;
 import jansegety.urlshortener.entity.UrlPack;
 import jansegety.urlshortener.entity.User;
 import jansegety.urlshortener.service.UrlPackService;
+import jansegety.urlshortener.service.compressing.ValueCompressedMaker;
+import jansegety.urlshortener.service.compressing.sourceprovider.CompressingSourceProvider;
 import jansegety.urlshortener.service.encoding.Encoder;
+import jansegety.urlshortener.service.hashing.Hasher;
 import lombok.RequiredArgsConstructor;
 
 
@@ -29,14 +32,15 @@ import lombok.RequiredArgsConstructor;
 public class UrlPackController {
 	
 	private final UrlPackService urlPackService;
-	private final Encoder<Long, String> encoder;
+	private final ValueCompressedMaker<String, String> valueCompressedMaker;
+	private final CompressingSourceProvider<String> compressingSourceProvider;
 
 	@RequestMapping(value = "/registform", method = GET)
 	public String createForm() {
 		return "/urlpack/registform";
 	}
 	
-	@RequestMapping(value = "/registform", method = POST)
+	@RequestMapping(value = "/regist", method = POST)
 	public String create(@RequestParam String originalUrl, 
 			@RequestAttribute(required=true) User loginUser, 
 			Model model) {
@@ -45,11 +49,12 @@ public class UrlPackController {
 			makeUrlPackRegisteredAndHavingValueCompressed(
 				loginUser, 
 				originalUrl, 
-				urlPackService, 
-				encoder);
+				urlPackService,
+				compressingSourceProvider,
+				valueCompressedMaker);
 		
 		UrlPackRegistConfirmationDto urlPackRegistConfirmationDto = 
-				makeRgistFormDto(urlPack);
+				makeRegistConfirmationDto(urlPack);
 		model.addAttribute("urlPackRegistConfirmationDto"
 			, urlPackRegistConfirmationDto);
 		

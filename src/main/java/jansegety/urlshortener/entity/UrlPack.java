@@ -3,6 +3,9 @@ package jansegety.urlshortener.entity;
 import static jansegety.urlshortener.error.message.SimpleEntityMessage.*;
 import static jansegety.urlshortener.error.message.UrlPackMessage.*;
 
+import java.util.Optional;
+import java.util.UUID;
+
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
@@ -11,8 +14,12 @@ import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 
+import jansegety.urlshortener.error.exception.ValueCompressedException;
 import jansegety.urlshortener.service.UrlPackService;
+import jansegety.urlshortener.service.compressing.ValueCompressedMaker;
+import jansegety.urlshortener.service.compressing.sourceprovider.CompressingSourceProvider;
 import jansegety.urlshortener.service.encoding.Encoder;
+import jansegety.urlshortener.service.hashing.Hasher;
 
 
 /*
@@ -42,13 +49,18 @@ public class UrlPack{
 			User user,
 			String originalUrl,
 			UrlPackService urlPackService,
-			Encoder<Long, String> encoder) {
+			CompressingSourceProvider<String> compressingSourceProvider,
+			ValueCompressedMaker<String, String> valueCompressedMaker) {
 		
 		UrlPack newUrlPack = new UrlPack();
 		newUrlPack.setUser(user);
 		newUrlPack.setOriginalUrl(originalUrl);
 		urlPackService.regist(newUrlPack);
-		newUrlPack.createValueEncoded(encoder);
+		newUrlPack
+			.createValueEncoded(
+				urlPackService, 
+				compressingSourceProvider, 
+				valueCompressedMaker);
 		
 		return newUrlPack;
 	}
@@ -102,12 +114,27 @@ public class UrlPack{
 		return valueCompressed;
 	}
 	
-	public void createValueEncoded(Encoder<Long, String> encoder) {
+	private void createValueEncoded(
+			UrlPackService urlPackService, 
+			CompressingSourceProvider<String> compressingSourceProvider, 
+			ValueCompressedMaker<String, String> valueCompressedMaker) {
 		
 		if(id==null) {
-			throw new IllegalStateException(NO_ID_ASSIGNED.getMessage());}
+			throw new IllegalStateException(NO_ID_ASSIGNED.getMessage());
+		}
 		
-		this.valueCompressed = encoder.encoding(this.id);
+		String valueCompressed;
+		
+		//소스 제공자의 제한 제공 수를 초기화 합니다.
+		compressingSourceProvider.init();
+		
+		do {	
+			String source = compressingSourceProvider.getSource();
+			valueCompressed = valueCompressedMaker.compress(source);
+		//만약 같은 값의 단축 url이 존재한다면 다시 단축 알고리즘을 진행합니다.	
+		} while(urlPackService.findByValueCompressed(valueCompressed).isPresent());
+		
+		this.valueCompressed = valueCompressed;
 	}
 	
 	@Override

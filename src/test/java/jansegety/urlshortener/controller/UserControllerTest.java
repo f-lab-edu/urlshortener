@@ -21,6 +21,7 @@ import jansegety.urlshortener.entity.User;
 import jansegety.urlshortener.interceptor.AuthLoginInterceptor;
 import jansegety.urlshortener.repository.UrlPackRepository;
 import jansegety.urlshortener.repository.UserRepository;
+import jansegety.urlshortener.testutil.constant.URL;
 
 
 @SpringBootTest
@@ -85,12 +86,12 @@ public class UserControllerTest {
 	}
 	
 	@Test
-	@DisplayName("로그인 하지 않고 urlpack/registform에 post 요청하면 login 페이지로 redirect 된다.")
-	public void when_requestPostUrlPackRegistFrom_then_redirectToLoginPage() 
+	@DisplayName("로그인 하지 않고 urlpack/regist에 post 요청하면 login 페이지로 redirect 된다.")
+	public void when_requestPostUrlPackRegist_then_redirectToLoginPage() 
 			throws Exception {
 		
-		mock.perform(post("/urlpack/registform")
-				.param("originalUrl", "WWW.ABCDEFG.HIJKLMNOP"))
+		mock.perform(post("/urlpack/regist")
+				.param("originalUrl",URL.MOCK_ORIGINAL_URL))
 			.andExpect(status().is3xxRedirection())
 			.andExpect(header().string("Location", "/user/login"));
 		

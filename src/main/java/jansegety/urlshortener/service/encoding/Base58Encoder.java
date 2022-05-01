@@ -2,15 +2,23 @@ package jansegety.urlshortener.service.encoding;
 
 import static jansegety.urlshortener.error.message.EncoderMessage.*;
 
-public class Base62Encoder implements Encoder<Long, String>{
+import org.springframework.stereotype.Component;
+
+import jansegety.urlshortener.error.message.EncoderMessage;
+
+/**
+ * 사용자 입장에서 쉽게 헷갈릴 수 있는 대문자 O와 숫자 0을
+ * Base60 인코더의 단축 문자 목록에서 삭제한 인코더입니다.
+ */
+@Component
+public class Base58Encoder implements Encoder<Long, String> {
 	
-	final int RADIX = 62;
+	final int RADIX = 58;
 	final String CODEC = 
-		"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+		"ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz123456789";
 
 	@Override
 	public String encode(Long source) {
-		
 		StringBuffer sb = new StringBuffer();
 		do {
 			sb.append(CODEC.charAt((int) (source % RADIX)));
