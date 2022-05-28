@@ -3,9 +3,6 @@ package jansegety.urlshortener.entity;
 import static jansegety.urlshortener.error.message.SimpleEntityMessage.*;
 import static jansegety.urlshortener.error.message.UrlPackMessage.*;
 
-import java.util.Optional;
-import java.util.UUID;
-
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
@@ -14,12 +11,9 @@ import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 
-import jansegety.urlshortener.error.exception.ValueCompressedException;
 import jansegety.urlshortener.service.UrlPackService;
 import jansegety.urlshortener.service.compressing.ValueCompressedMaker;
 import jansegety.urlshortener.service.compressing.sourceprovider.CompressingSourceProvider;
-import jansegety.urlshortener.service.encoding.Encoder;
-import jansegety.urlshortener.service.hashing.Hasher;
 
 
 /*

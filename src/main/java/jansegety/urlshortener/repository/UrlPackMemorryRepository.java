@@ -2,6 +2,7 @@ package jansegety.urlshortener.repository;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Repository;
 
@@ -35,7 +36,7 @@ public class UrlPackMemorryRepository implements UrlPackRepository{
 	public List<UrlPack> findByUser(User user) {
 		return urlPackList.stream()
 			.filter(e->e.getUser()==null ? false : e.getUser().equals(user))
-			.toList();
+			.collect(Collectors.toList());
 	}
 
 }
