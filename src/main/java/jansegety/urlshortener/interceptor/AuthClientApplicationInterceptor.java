@@ -1,6 +1,7 @@
 package jansegety.urlshortener.interceptor;
 
 import static jansegety.urlshortener.error.message.ClientApplicationMessage.*;
+import static jansegety.urlshortener.error.message.UserMessage.*;
 
 import java.util.List;
 import java.util.Optional;
@@ -18,7 +19,9 @@ import jansegety.urlshortener.entity.ClientApplication;
 import jansegety.urlshortener.entity.User;
 import jansegety.urlshortener.error.exception.InvalidClientException;
 import jansegety.urlshortener.error.exception.InvalidSecretException;
+import jansegety.urlshortener.error.exception.entity.clientapplication.AuthClientApplicationException;
 import jansegety.urlshortener.service.ClientApplicationService;
+import jansegety.urlshortener.service.UserService;
 import lombok.RequiredArgsConstructor;
 
 /*
@@ -29,6 +32,8 @@ public class AuthClientApplicationInterceptor implements HandlerInterceptor {
 	
 	@Value("${path.authClient.essential}")
 	public List<String> authClientEssential;
+	
+	private final UserService userService;
 
 	private final ClientApplicationService clientApplicationService;
 	
@@ -61,20 +66,26 @@ public class AuthClientApplicationInterceptor implements HandlerInterceptor {
 		
 		//secret이 일치하지 않는다면
 		ClientApplication clientApplication = clientApplicationOp.get();
+		System.out.println("clientApplication = " + clientApplication);
 		if(!clientApplication.equalsClientSecret(clientSecretUUID)) {
 			throw new InvalidSecretException(
 					NO_MATCHING_SECRET_FOUND.getMessage());
 		}
 			
 		//user 검증 로직
-		User clientUser = clientApplication.getUser();
-		if(clientUser == null) {
+		//ClientApplication의 user_id는 not null 제약조건이 있으므로 일반적으로 이 예외가 발생할 가능성은 없다.
+		Long clientUserId = clientApplication.getUserId();
+		if(clientUserId == null) {
 			throw new IllegalStateException(
 					CLIENT_HAS_NO_USER.getMessage());
 		}
 		
 		//client를 등록한 유저 세션에 등록
 		HttpSession session = request.getSession();
+		User clientUser = userService.findById(clientUserId)
+			.orElseThrow(
+				()->new AuthClientApplicationException(USER_NOT_REGISTERED.getMessage()));
+		
 		session.setAttribute("clientUser", clientUser);		
 		
 		return true;

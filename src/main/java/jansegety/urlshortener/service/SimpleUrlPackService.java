@@ -1,16 +1,24 @@
 package jansegety.urlshortener.service;
 
+import static jansegety.urlshortener.error.message.UrlPackMessage.*;
+import static javax.servlet.http.HttpServletResponse.*;
+
 import java.util.List;
 import java.util.Optional;
+
+import javax.servlet.http.HttpServletResponse;
+import javax.transaction.Transactional;
 
 import org.springframework.stereotype.Service;
 
 import jansegety.urlshortener.entity.UrlPack;
 import jansegety.urlshortener.entity.User;
+import jansegety.urlshortener.error.message.UrlPackMessage;
 import jansegety.urlshortener.repository.UrlPackRepository;
 import lombok.RequiredArgsConstructor;
 
 @Service
+@Transactional
 @RequiredArgsConstructor
 public class SimpleUrlPackService implements UrlPackService {
 
@@ -20,6 +28,11 @@ public class SimpleUrlPackService implements UrlPackService {
 	public void regist(UrlPack urlPack) {
 		urlPackRepository.save(urlPack);
 	}
+	
+	@Override
+	public void update(UrlPack urlPack) {
+		urlPackRepository.update(urlPack);
+	}
 
 	@Override
 	public List<UrlPack> findAll() {
@@ -27,25 +40,38 @@ public class SimpleUrlPackService implements UrlPackService {
 	}
 
 	@Override
-	public Optional<UrlPack> findByValueCompressed(String valueEncoded) {
-		
-		Optional<UrlPack> urlPackOrNull = findAll().stream()
-			.filter(urlPack -> { 
-					//getValueCompressed()가 null일 수 있기 때문에 반드시 체크해줘야 한다.
-					//예를 들어서 urlPack이 아무것도 없을때 호출되면 NullPointerException이 발생한다.
-					if(urlPack.getValueCompressed() == null) {
-						return false;
-					}
-					return urlPack.getValueCompressed().equals(valueEncoded); 
-				})
-			.findAny();
-		
-		return urlPackOrNull;
+	public UrlPack findByValueCompressed(String valueCompressed) {
+		return urlPackRepository
+			.findByValueCompressed(valueCompressed)
+			.orElseThrow(()->
+				new IllegalArgumentException(
+					URL_PACK_ENTITY_CORRESPONDING_TO_VALUE_COMPRESSED_DOES_NOT_EXIST.getMessage()));
 	}
 
 	@Override
 	public List<UrlPack> findByUser(User user) {
 		return urlPackRepository.findByUser(user);
+	}
+	
+	@Override
+	public void increaseByOneTheNumberOfRequestForShortenedUrlCorrespondingToValueCompressed(
+			String valueEncoded, 
+			HttpServletResponse response) {
+		UrlPack urlPack = findByValueCompressed(valueEncoded);
+		
+		urlPack.setRequestNum(urlPack.getRequestNum()+1);
+		//MyBatis를 사용하면 영속성 컨텍스트가 존재하지 않기 때문에 상태를 변경한 entity를 업데이트 해줘야한다.
+		update(urlPack);
+		
+		response.setStatus(SC_MOVED_PERMANENTLY);
+		response.setHeader("Location", urlPack.getOriginalUrl());
+	}
+
+	@Override
+	public boolean isPresentUrlPackWithValueCompressed(String valueCompressed) {
+		return urlPackRepository
+			.findByValueCompressed(valueCompressed)
+			.isPresent();
 	}
 
 }

@@ -43,7 +43,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
     
     @Bean
     public AuthClientApplicationInterceptor getAuthClientApplicationInterceptor() {
-    	return new AuthClientApplicationInterceptor(clientApplicationService);
+    	return new AuthClientApplicationInterceptor(userService, clientApplicationService);
     }
     
 }

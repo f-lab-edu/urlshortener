@@ -1,17 +1,25 @@
 package jansegety.urlshortener.controller;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
+import javax.transaction.Transactional;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
+import org.mybatis.spring.boot.autoconfigure.MybatisAutoConfiguration;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
+import org.springframework.boot.autoconfigure.jdbc.DataSourceTransactionManagerAutoConfiguration;
+import org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.mock.web.MockHttpSession;
+import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.servlet.ViewResolver;
@@ -21,14 +29,30 @@ import jansegety.urlshortener.entity.User;
 import jansegety.urlshortener.interceptor.AuthLoginInterceptor;
 import jansegety.urlshortener.repository.UrlPackRepository;
 import jansegety.urlshortener.repository.UserRepository;
+import jansegety.urlshortener.repository.memoryrepository.UrlPackMemoryRepository;
+import jansegety.urlshortener.repository.memoryrepository.UserMemoryRepository;
+import jansegety.urlshortener.testutil.constant.MockUserField;
 import jansegety.urlshortener.testutil.constant.URL;
 
-
+//mybatis dao를 테스트하려면 아래의 
+//@ActiveProfiles("concurrent-test")와 
+//@EnableAutoConfiguration을 주석처리하고
+//아래의 주석된 것을 풀어서 실행하면 된다.
+@ActiveProfiles("dev")
+@Execution(ExecutionMode.SAME_THREAD)
+@DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
+@EnableAutoConfiguration(exclude= {HibernateJpaAutoConfiguration.class})
+//@ActiveProfiles("concurrent-test")
+//@EnableAutoConfiguration(exclude= { 
+//		DataSourceAutoConfiguration.class, 
+//		DataSourceTransactionManagerAutoConfiguration.class, 
+//		HibernateJpaAutoConfiguration.class,
+//		MybatisAutoConfiguration.class})
 @SpringBootTest
 public class UserControllerTest {
 
 	@Autowired
-	private UserRepository userRepository;
+	private UserRepository userMapper;
 	
 	@Autowired
 	private UrlPackRepository urlPackRepository;
@@ -53,14 +77,19 @@ public class UserControllerTest {
 			.setViewResolvers(getViewResolver())
 			.build();
 		
-		userRepository.deleteAll();
-		urlPackRepository.deleteAll();
+		if(urlPackRepository instanceof UrlPackMemoryRepository) {
+			UrlPackMemoryRepository urlPackMemoryRepository = (UrlPackMemoryRepository)urlPackRepository;
+			urlPackMemoryRepository.deleteAll();
+		}
+		
+		if(userMapper instanceof UserMemoryRepository) {
+			UserMemoryRepository userMemoryRepository = (UserMemoryRepository)userMapper;
+			userMemoryRepository.deleteAll();
+		}
 		
 		//테스트용 유저
-		User testUser = new User();
-		testUser.setEmail("testUser@gmail.com");
-		testUser.setPassword("1234abcd!@?~");
-		userRepository.save(testUser);
+		User testUser = new User(MockUserField.EMAIL, MockUserField.PASSWORD);
+		userMapper.save(testUser);
 		
 	}
 	

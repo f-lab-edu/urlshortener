@@ -1,6 +1,6 @@
 package jansegety.urlshortener.controller;
 
-import static jansegety.urlshortener.controller.jsondto.CreateShortUrlDto.*;
+import static jansegety.urlshortener.controller.responsedto.CreateShortUrlDto.*;
 import static jansegety.urlshortener.entity.UrlPack.*;
 
 import org.springframework.web.bind.annotation.PostMapping;
@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.SessionAttribute;
 
-import jansegety.urlshortener.controller.jsondto.CreateShortUrlDto;
+import jansegety.urlshortener.controller.responsedto.CreateShortUrlDto;
 import jansegety.urlshortener.entity.UrlPack;
 import jansegety.urlshortener.entity.User;
 import jansegety.urlshortener.service.UrlPackService;

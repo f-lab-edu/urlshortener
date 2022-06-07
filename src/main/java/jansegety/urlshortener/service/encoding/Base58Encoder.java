@@ -55,7 +55,7 @@ public class Base58Encoder implements Encoder<Long, String> {
 			valueEncoded = stringBuilderValueEncoded.toString();
 			
 		} else if (valueEncoded.length() > length) {
-			throw new IllegalArgumentException(ENCODING_VALUE_TOO_LARGE.toString());
+			throw new IllegalArgumentException(ENCODING_VALUE_TOO_LARGE.toString() + ": valueEncoded = " + valueEncoded);
 		}
 		
 		return valueEncoded;
