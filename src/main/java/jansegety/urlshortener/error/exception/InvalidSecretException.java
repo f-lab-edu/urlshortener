@@ -4,5 +4,9 @@ import lombok.NoArgsConstructor;
 
 @NoArgsConstructor
 public class InvalidSecretException extends RuntimeException{
-	public InvalidSecretException(String message) {super(message);}
+	
+	public InvalidSecretException(String message) {
+		super(message);
+	}
+	
 }

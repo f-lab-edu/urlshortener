@@ -13,8 +13,14 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -27,12 +33,25 @@ import jansegety.urlshortener.controller.viewdto.UrlPackRegistConfirmationDto;
 import jansegety.urlshortener.entity.UrlPack;
 import jansegety.urlshortener.entity.User;
 import jansegety.urlshortener.repository.UrlPackRepository;
+import jansegety.urlshortener.repository.UserRepository;
+import jansegety.urlshortener.repository.memoryrepository.UrlPackMemoryRepository;
 import jansegety.urlshortener.service.UrlPackService;
 import jansegety.urlshortener.service.compressing.ValueCompressedMaker;
 import jansegety.urlshortener.service.compressing.sourceprovider.CompressingSourceProvider;
+import jansegety.urlshortener.testutil.constant.MockUserField;
 import jansegety.urlshortener.testutil.constant.RegularExpression;
 import jansegety.urlshortener.testutil.constant.URL;
 
+@ActiveProfiles("dev")
+@DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
+@Execution(ExecutionMode.SAME_THREAD)
+@EnableAutoConfiguration(exclude= {HibernateJpaAutoConfiguration.class})
+//@ActiveProfiles("concurrent-test")
+//@EnableAutoConfiguration(exclude= { 
+//		DataSourceAutoConfiguration.class, 
+//		DataSourceTransactionManagerAutoConfiguration.class, 
+//		HibernateJpaAutoConfiguration.class,
+//		MybatisAutoConfiguration.class})
 @SpringBootTest
 class UrlPackControllerTest {
 
@@ -43,6 +62,9 @@ class UrlPackControllerTest {
 	private UrlPackRepository urlPackRepository;
 	
 	@Autowired
+	private UserRepository userRepository;
+	
+	@Autowired
 	private UrlPackService urlPackService;
 	
 	@Autowired
@@ -50,7 +72,7 @@ class UrlPackControllerTest {
 	
 	private MockMvc mock;
 	private User testUser;
-	private final String LONG_URL =  URL.MOCK_ORIGINAL_URL;
+	private final String ORIGINAL_URL_1 =  URL.MOCK_ORIGINAL_URL;
 	
 	private final String regex = RegularExpression.VALUE_COMPRESSED_FORMAT_WITH_PRIFIX;
 	
@@ -63,10 +85,13 @@ class UrlPackControllerTest {
 			.setViewResolvers(getViewResolver())
 			.build();
 		
-		urlPackRepository.deleteAll();
+		if(urlPackRepository instanceof UrlPackMemoryRepository) {
+			UrlPackMemoryRepository urlPackMemoryRepository = (UrlPackMemoryRepository)urlPackRepository;
+			urlPackMemoryRepository.deleteAll();
+		}
 		
 		//user 생성
-		testUser = new User();
+		testUser = new User(MockUserField.EMAIL, MockUserField.PASSWORD);
 		
 		CompressingSourceProvider<String> mockCompressiongSourceProvider =
 				mock(CompressingSourceProvider.class);
@@ -74,10 +99,12 @@ class UrlPackControllerTest {
 		String mockUUID = UUID.randomUUID().toString().replace("-", "");
 		when(mockCompressiongSourceProvider.getSource()).thenReturn(mockUUID);
 		
+		userRepository.save(testUser);//영속화와 함게 User id를 받아온다.
+		
 		UrlPack
 		.makeUrlPackRegisteredAndHavingValueCompressed(
 				testUser, 
-				LONG_URL, 
+				ORIGINAL_URL_1, 
 				urlPackService,
 				mockCompressiongSourceProvider,
 				valueCompressedMaker);
@@ -110,7 +137,7 @@ class UrlPackControllerTest {
 			throws Exception {
 		
 		mock.perform(post("/urlpack/regist")
-				.param("originalUrl", LONG_URL)
+				.param("originalUrl", ORIGINAL_URL_1)
 				.sessionAttr("userId", 1L)
 				.requestAttr("loginUser", testUser))
 			.andExpect(status().isOk())
@@ -124,7 +151,7 @@ class UrlPackControllerTest {
 			throws Exception {
 	
 		MvcResult mvcResult = mock.perform(post("/urlpack/regist")
-				.param("originalUrl", LONG_URL)
+				.param("originalUrl", ORIGINAL_URL_1)
 				.sessionAttr("userId", 1L)
 				.requestAttr("loginUser", testUser))
 				.andDo(print())
@@ -139,7 +166,7 @@ class UrlPackControllerTest {
 		String originalUrl = urlPackRegistConfirmationDto.getOriginalUrl();
 		String shortUrl = urlPackRegistConfirmationDto.getShortUrl();
 		
-		assertThat(originalUrl, equalTo(LONG_URL));
+		assertThat(originalUrl, equalTo(ORIGINAL_URL_1));
 		assertThat(shortUrl, matchesPattern(regex));
 	}
 	
@@ -159,18 +186,16 @@ class UrlPackControllerTest {
 	void when_requestShowListWithNoException_then_putTheListInTheUrlPackStorageAsDtoInTheModelAndReturnIt() 
 			throws Exception {
 		
-		urlPackRepository.deleteAll();
-		
-		final String ORIGIANL_URL_0 = "AAA.AAA.AAA";
-		final String ORIGIANL_URL_1 = "BBB.BBB.BBB";
+		final String ORIGIANL_URL_2 = "AAA.AAA.AAA";
+		final String ORIGIANL_URL_3 = "BBB.BBB.BBB";
 		
 		mock.perform(post("/urlpack/regist")
-				.param("originalUrl", ORIGIANL_URL_0)
+				.param("originalUrl", ORIGIANL_URL_2)
 				.sessionAttr("userId", 1L)
 				.requestAttr("loginUser", testUser));
 		
 		mock.perform(post("/urlpack/regist")
-				.param("originalUrl", ORIGIANL_URL_1)
+				.param("originalUrl", ORIGIANL_URL_3)
 				.sessionAttr("userId", 1L)
 				.requestAttr("loginUser", testUser));
 		
@@ -186,15 +211,25 @@ class UrlPackControllerTest {
 				.get("urlPackListDto");
 		
 		List<UrlPackInfo> urlPackInfoList = urlPackListDto.getUrlPackInfoList();
+		
+		for(UrlPackInfo e : urlPackInfoList) {
+			System.out.println("UrlPackInfo : " + e.getShortenedUrl() );
+		}
+		
 		UrlPackInfo urlPackInfo0 = urlPackInfoList.get(0);
-		assertThat(urlPackInfo0.getOriginalUrl(), equalTo(ORIGIANL_URL_0));
+		assertThat(urlPackInfo0.getOriginalUrl(), equalTo(ORIGINAL_URL_1));
 		assertThat(urlPackInfo0.getRequstNum(),  equalTo(0));
 		assertThat(urlPackInfo0.getShortenedUrl(), matchesPattern(regex));
 		
 		UrlPackInfo urlPackInfo1 = urlPackInfoList.get(1);
-		assertThat(urlPackInfo1.getOriginalUrl(), equalTo(ORIGIANL_URL_1));
+		assertThat(urlPackInfo1.getOriginalUrl(), equalTo(ORIGIANL_URL_2));
 		assertThat(urlPackInfo1.getRequstNum(),  equalTo(0));
 		assertThat(urlPackInfo1.getShortenedUrl(), matchesPattern(regex));
+		
+		UrlPackInfo urlPackInfo2 = urlPackInfoList.get(2);
+		assertThat(urlPackInfo2.getOriginalUrl(), equalTo(ORIGIANL_URL_3));
+		assertThat(urlPackInfo2.getRequstNum(),  equalTo(0));
+		assertThat(urlPackInfo2.getShortenedUrl(), matchesPattern(regex));
 	}
 
 }

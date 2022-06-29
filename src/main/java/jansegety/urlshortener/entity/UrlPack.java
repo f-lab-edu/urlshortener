@@ -6,6 +6,7 @@ import static jansegety.urlshortener.error.message.UrlPackMessage.*;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
@@ -23,8 +24,8 @@ import jansegety.urlshortener.service.compressing.sourceprovider.CompressingSour
 @Entity
 public class UrlPack{
 	
-	@Id @GeneratedValue
-	@Column(name = "id")
+	@Id @GeneratedValue(strategy=GenerationType.IDENTITY)
+	@Column(name = "id", updatable = false, nullable = false)
 	private Long id;
 	
 	@Column(name = "original_url")
@@ -35,10 +36,9 @@ public class UrlPack{
 	@Column(name = "request_num")
 	private Integer requestNum=0;
 	
-	@ManyToOne
-	@JoinColumn(name = "id")
-	private User user;
-	
+	@Column(name = "user_id")
+	private Long userId;
+
 	public static UrlPack makeUrlPackRegisteredAndHavingValueCompressed(
 			User user,
 			String originalUrl,
@@ -47,14 +47,14 @@ public class UrlPack{
 			ValueCompressedMaker<String, String> valueCompressedMaker) {
 		
 		UrlPack newUrlPack = new UrlPack();
-		newUrlPack.setUser(user);
+		newUrlPack.setUserId(user.getId());
 		newUrlPack.setOriginalUrl(originalUrl);
-		urlPackService.regist(newUrlPack);
 		newUrlPack
 			.createValueEncoded(
 				urlPackService, 
 				compressingSourceProvider, 
 				valueCompressedMaker);
+		urlPackService.regist(newUrlPack); //mysql에서는 모든 필드가 세팅된 뒤에 영속화 해줘야 함
 		
 		return newUrlPack;
 	}
@@ -70,6 +70,14 @@ public class UrlPack{
 					ID_HAS_ALREADY_BEEN_ASSIGNED.getMessage());
 		
 		this.id = id;
+	}
+	
+	public Long getUserId() {
+		return this.userId;
+	}
+	
+	public void setUserId(Long userId) {
+		this.userId = userId;
 	}
 	
 	public String getOriginalUrl() {
@@ -88,17 +96,10 @@ public class UrlPack{
 		return requestNum;
 	}
 	
-	public User getUser() {
-		return user;
-	}
-
 	public void setRequestNum(Integer requestNum) {
 		this.requestNum = requestNum;
 	}
 	
-	private void setUser(User user) {
-		this.user = user;
-	}
 	
 	public String requestShortUrlWithOriginalUrl(String originalUrl) {
 		if(!this.origianlUrl.equals(originalUrl))
@@ -113,10 +114,6 @@ public class UrlPack{
 			CompressingSourceProvider<String> compressingSourceProvider, 
 			ValueCompressedMaker<String, String> valueCompressedMaker) {
 		
-		if(id==null) {
-			throw new IllegalStateException(NO_ID_ASSIGNED.getMessage());
-		}
-		
 		String valueCompressed;
 		
 		//소스 제공자의 제한 제공 수를 초기화 합니다.
@@ -126,7 +123,7 @@ public class UrlPack{
 			String source = compressingSourceProvider.getSource();
 			valueCompressed = valueCompressedMaker.compress(source);
 		//만약 같은 값의 단축 url이 존재한다면 다시 단축 알고리즘을 진행합니다.	
-		} while(urlPackService.findByValueCompressed(valueCompressed).isPresent());
+		} while(urlPackService.isPresentUrlPackWithValueCompressed(valueCompressed));
 		
 		this.valueCompressed = valueCompressed;
 	}

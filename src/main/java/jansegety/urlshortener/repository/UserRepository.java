@@ -2,16 +2,15 @@ package jansegety.urlshortener.repository;
 
 import java.util.Optional;
 
-import org.springframework.stereotype.Repository;
+import org.apache.ibatis.annotations.Mapper;
 
 import jansegety.urlshortener.entity.User;
 
-@Repository
+@Mapper
 public interface UserRepository {
 	
 	public void save(User user);
 	public Optional<User> findById(Long id);
 	public Optional<User> findByEmail(String email);
-	public void deleteAll();
 	
 }

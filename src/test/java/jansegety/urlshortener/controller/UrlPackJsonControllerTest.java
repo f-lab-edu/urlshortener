@@ -16,9 +16,18 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
+import org.mybatis.spring.boot.autoconfigure.MybatisAutoConfiguration;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
+import org.springframework.boot.autoconfigure.jdbc.DataSourceTransactionManagerAutoConfiguration;
+import org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
@@ -29,11 +38,27 @@ import jansegety.urlshortener.error.exception.InvalidSecretException;
 import jansegety.urlshortener.interceptor.AuthClientApplicationInterceptor;
 import jansegety.urlshortener.repository.ClientApplicationRepository;
 import jansegety.urlshortener.repository.UrlPackRepository;
+import jansegety.urlshortener.repository.UserRepository;
+import jansegety.urlshortener.repository.memoryrepository.ClientApplicationMemoryRepository;
+import jansegety.urlshortener.repository.memoryrepository.UrlPackMemoryRepository;
+import jansegety.urlshortener.service.ClientApplicationService;
+import jansegety.urlshortener.service.UserService;
 import jansegety.urlshortener.service.encoding.Encoder;
+import jansegety.urlshortener.testutil.constant.MockUserField;
 import jansegety.urlshortener.testutil.constant.RegularExpression;
 import jansegety.urlshortener.testutil.constant.URL;
 import jansegety.urlshortener.util.UrlMaker;
 
+@ActiveProfiles("dev")
+@DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
+@Execution(ExecutionMode.SAME_THREAD)
+@EnableAutoConfiguration(exclude= {HibernateJpaAutoConfiguration.class})
+//@ActiveProfiles("concurrent-test")
+//@EnableAutoConfiguration(exclude= { 
+//		DataSourceAutoConfiguration.class, 
+//		DataSourceTransactionManagerAutoConfiguration.class, 
+//		HibernateJpaAutoConfiguration.class,
+//		MybatisAutoConfiguration.class})
 @SpringBootTest
 class UrlPackJsonControllerTest {
 	
@@ -41,10 +66,16 @@ class UrlPackJsonControllerTest {
 	private UrlPackJsonController jsonController;
 	
 	@Autowired
+	private UserService userService;
+	
+	@Autowired
 	private UrlPackRepository urlPackRepository;
 	
 	@Autowired
 	private ClientApplicationRepository clientApplicationRepository;
+	
+	@Autowired
+	private ClientApplicationService clientApplicationService;
 	
 	@Autowired
 	private AuthClientApplicationInterceptor authClientApplicationInterceptor;
@@ -57,7 +88,9 @@ class UrlPackJsonControllerTest {
 										MediaType.APPLICATION_JSON.getSubtype(),
 										Charset.forName("utf8"));
 	
-	private final String LONG_URL = URL.MOCK_ORIGINAL_URL;
+	private final String ORIGINAL_URL = URL.MOCK_ORIGINAL_URL;
+	
+	private User mockUser;
 	
 	@BeforeEach
 	public void setup() {
@@ -65,8 +98,22 @@ class UrlPackJsonControllerTest {
 			.addInterceptors(authClientApplicationInterceptor)
 			.build();
 	
-		urlPackRepository.deleteAll();
-		clientApplicationRepository.deleteAll();
+		if(urlPackRepository instanceof UrlPackMemoryRepository) {
+			UrlPackMemoryRepository urlPackMemoryRepository = (UrlPackMemoryRepository)urlPackRepository;
+			urlPackMemoryRepository.deleteAll();
+		}
+		
+		if(clientApplicationRepository instanceof ClientApplicationMemoryRepository) {
+			ClientApplicationMemoryRepository clientApplicationMemoryRepository = 
+				(ClientApplicationMemoryRepository)clientApplicationRepository;
+			
+			clientApplicationMemoryRepository.deleteAll();
+		}
+		
+		//clientApplication에 유저 할당
+		mockUser = new User(MockUserField.EMAIL, MockUserField.PASSWORD);
+		userService.regist(mockUser); //영속화 후 id 받음
+		
 	}
 
 	@Test
@@ -78,22 +125,24 @@ class UrlPackJsonControllerTest {
 		//clientApplication 설정
 		ClientApplication clientApplication = new ClientApplication();
 		clientApplication.setName("테스트용 클라이언트");
-		clientApplication.setClientSecret(UUID.randomUUID()); //id는 영속화 될 때 할당된다.
+		clientApplication.setClientSecret(UUID.randomUUID().toString()); //id는 영속화 될 때 할당된다.
 		
 		//clientApplication에 유저 할당
-		User user = new User();
-		clientApplication.setUser(user);
+		clientApplication.setUserId(mockUser.getId());
 		
 		//clientApplication 영속화
-		clientApplicationRepository.save(clientApplication); 
+		clientApplicationService.regist(clientApplication); 
 		
 		final String regex = RegularExpression.VALUE_COMPRESSED_FORMAT_WITH_PRIFIX;
 		
-		mvc.perform(post("/urlpack/util/shorturl").param("url",LONG_URL).accept(jsonType)
+		System.out.println("id = " + clientApplication.getId());
+		System.out.println("secret = " + clientApplication.getClientSecret());
+		
+		mvc.perform(post("/urlpack/util/shorturl").param("url",ORIGINAL_URL).accept(jsonType)
 				.header("urlshortener-client-id", clientApplication.getId().toString())
 				.header("urlshortener-client-secret", clientApplication.getClientSecret().toString()))
 			.andExpect(status().isOk())
-			.andExpect(jsonPath("$.result.orginalUrl", is(LONG_URL)))
+			.andExpect(jsonPath("$.result.orginalUrl", is(ORIGINAL_URL)))
 			.andExpect(jsonPath("$.result.shortenedUrl").exists())
 			.andExpect(jsonPath("$.result.shortenedUrl", matchesPattern(regex)))
 			.andDo(print());
@@ -108,7 +157,7 @@ class UrlPackJsonControllerTest {
 	{
 		// and set null 'urlshortener-client-secret' header value
 		assertThatThrownBy(()-> mvc.perform(post("/urlpack/util/shorturl")
-				.param("url",LONG_URL).accept(jsonType)
+				.param("url",ORIGINAL_URL).accept(jsonType)
 				.header("urlshortener-client-id", "")))
 			.hasCause(
 				new IllegalArgumentException(
@@ -126,16 +175,16 @@ class UrlPackJsonControllerTest {
 		ClientApplication clientApplication = new ClientApplication();
 		clientApplication.setName("테스트용 클라이언트");
 		clientApplication.setId(UUID.randomUUID()); // 저장소로 부터 할당받지 않은 임의의 UUID를 할당
-		clientApplication.setClientSecret(UUID.randomUUID());
+		clientApplication.setClientSecret(UUID.randomUUID().toString());
 		
 		//clientApplication에 유저 할당
-		User user = new User();
-		clientApplication.setUser(user);
+		User user = new User(MockUserField.EMAIL, MockUserField.PASSWORD);
+		clientApplication.setUserId(user.getId());
 		
 		//clientApplication을 영속화 하지 않음
 	
 		assertThatThrownBy(()-> mvc.perform(post("/urlpack/util/shorturl")
-				.param("url",LONG_URL).accept(jsonType)
+				.param("url",ORIGINAL_URL).accept(jsonType)
 				.header("urlshortener-client-id", clientApplication.getId().toString())
 				.header("urlshortener-client-secret", 
 					clientApplication.getClientSecret().toString())))
@@ -154,47 +203,19 @@ class UrlPackJsonControllerTest {
 		//clientApplication 설정
 		ClientApplication clientApplication = new ClientApplication();
 		clientApplication.setName("테스트용 클라이언트");
-		clientApplication.setClientSecret(UUID.randomUUID()); //id는 영속화 될 때 할당된다.
+		clientApplication.setClientSecret(UUID.randomUUID().toString()); //id는 영속화 될 때 할당된다.
 		
-		//clientApplication에 유저 할당
-		User user = new User();
-		clientApplication.setUser(user);
+		clientApplication.setUserId(mockUser.getId());
 		
-		//clientApplication 영속화
-		clientApplicationRepository.save(clientApplication);
+		clientApplicationService.regist(clientApplication);//영속화
 		
 		assertThatThrownBy(()-> mvc.perform(post("/urlpack/util/shorturl")
-				.param("url",LONG_URL).accept(jsonType)
-				.header("urlshortener-client-id", clientApplication.getId().toString())
+				.param("url",ORIGINAL_URL).accept(jsonType)
+				.header("urlshortener-client-id", clientApplication.getId())
 				.header("urlshortener-client-secret", UUID.randomUUID().toString())))//임의의 UUID를 할당
 			.hasCause(
 				new InvalidSecretException(
 					NO_MATCHING_SECRET_FOUND.getMessage()));
-	}
-	
-	@Test
-	@DisplayName("/urlpack/util/shorturl로 요청이 오면 client를 소유한 user 정보가 없으면 예외가 발생해야 한다.")
-	void when_thereIsNotMachingUserOwnsClient_then_throwsIllegalStateException() 
-			throws Exception
-	{
-		//clientApplication 설정
-		ClientApplication clientApplication = new ClientApplication();
-		clientApplication.setName("테스트용 클라이언트");
-		clientApplication.setClientSecret(UUID.randomUUID()); //id는 영속화 될 때 할당된다.
-		
-		//clientApplication에 user 정보를 set 하지 않음
-		
-		//clientApplication 영속화
-		clientApplicationRepository.save(clientApplication); 
-		
-		User user = new User();
-		user.setEmail("good@morning");
-		
-		assertThatThrownBy(() -> mvc.perform(post("/urlpack/util/shorturl")
-				.param("url",LONG_URL).accept(jsonType)
-				.header("urlshortener-client-id", clientApplication.getId().toString())
-				.header("urlshortener-client-secret", clientApplication.getClientSecret().toString())))
-			.hasCause(new IllegalStateException(CLIENT_HAS_NO_USER.getMessage()));
 	}
 
 }

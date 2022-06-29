@@ -21,7 +21,7 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import jansegety.urlshortener.error.exception.ValueCompressedException;
-import jansegety.urlshortener.repository.UrlPackMemorryRepository;
+import jansegety.urlshortener.repository.memoryrepository.UrlPackMemoryRepository;
 import jansegety.urlshortener.service.SimpleUrlPackService;
 import jansegety.urlshortener.service.UrlPackService;
 import jansegety.urlshortener.service.compressing.SHA1Base58ValueCompressedMaker;
@@ -32,14 +32,10 @@ import jansegety.urlshortener.service.encoding.Base58Encoder;
 import jansegety.urlshortener.service.hashing.SHA1Hasher;
 import jansegety.urlshortener.testutil.constant.URL;
 
-
-@ExtendWith({SpringExtension.class, MockitoExtension.class})
-@ContextConfiguration(classes = {ConfigForUrlPackTest.class})
-@ActiveProfiles({"test"})
 class UrlPackTest {
 	
 	UrlPackService urlPackService = 
-		new SimpleUrlPackService(new UrlPackMemorryRepository());
+		new SimpleUrlPackService(new UrlPackMemoryRepository());
 	
 	
 	private ValueCompressedMaker<String, String> valueCompressedMaker = 
@@ -125,6 +121,5 @@ class UrlPackTest {
 					.getValueCompressed(), is(equalTo(valueCompressedMaker.compress(mockUUID))));
 		
 	}
-
 
 }

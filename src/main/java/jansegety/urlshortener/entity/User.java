@@ -9,6 +9,7 @@ import java.util.List;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.OneToMany;
 import javax.persistence.Table;
@@ -17,21 +18,20 @@ import javax.persistence.Table;
 @Entity
 public class User {
 	
-	@Id @GeneratedValue
+	@Id @GeneratedValue(strategy = GenerationType.IDENTITY)
 	@Column(name = "id")
 	private Long id;
-	
+
 	@Column(name = "email")
 	private String email;
 	
 	@Column(name = "password")
 	private String password;
 	
-	@OneToMany(mappedBy ="user")
-	List<UrlPack> urlPackList = new ArrayList<>();
-	
-	@OneToMany(mappedBy ="user")
-	List<ClientApplication> clientApplicationList = new ArrayList<>();
+	public User(String email, String password) {
+		this.email = email;
+		this.password = password;
+	}
 	
 	public void setId(Long id) {
 		if(this.id != null) {
@@ -46,23 +46,6 @@ public class User {
 	
 	public void setPassword(String password) {
 		this.password = password;
-	}
-	
-	public void setUrlPackList(List<UrlPack> urlPackList) {
-		this.urlPackList = urlPackList;
-	}
-	
-	public void setClientApplicationList(
-			List<ClientApplication> clientApplicationList) {
-		this.clientApplicationList = clientApplicationList;
-	}
-
-	public List<UrlPack> getUrlPackList() {
-		return Collections.unmodifiableList(urlPackList);
-	}
-
-	public List<ClientApplication> getClientApplicationList() {
-		return Collections.unmodifiableList(clientApplicationList);
 	}
 
 	public Long getId() {

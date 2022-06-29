@@ -21,22 +21,13 @@ public class RedirectController {
 	
 	private final UrlPackService urlPackService;
 	
-	@RequestMapping("/{valueEncoded}")
-	public void redirectTooriginalUrl(@PathVariable String valueEncoded, 
+	@RequestMapping("/{valueCompressed}")
+	public void redirectTooriginalUrl(@PathVariable String valueCompressed, 
 			HttpServletResponse response) {
 		
-		Optional<UrlPack> opUrlPack = urlPackService.findByValueCompressed(valueEncoded);
-		
-		if(opUrlPack.isEmpty()){
-			response.setStatus(SC_BAD_REQUEST);
-			return ;
-		}
-		
-		UrlPack urlPack = opUrlPack.get();
-		urlPack.setRequestNum(urlPack.getRequestNum()+1);
-		
-		response.setStatus(SC_MOVED_PERMANENTLY);
-		response.setHeader("Location", urlPack.getOriginalUrl());
+		urlPackService
+			.increaseByOneTheNumberOfRequestForShortenedUrlCorrespondingToValueCompressed(
+					valueCompressed, response);
 		
 	}
 	

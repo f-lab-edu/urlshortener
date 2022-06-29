@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="jansegety.urlshortener.repository.UrlPackRepository">
+
+	<insert id="save" useGeneratedKeys="true" keyProperty="id">
+		insert into url_pack (original_url, value_compressed, request_num, user_id)
+		values (#{originalUrl}, #{valueCompressed}, #{requestNum}, #{userId})
+	</insert>
+	
+	<update id="update">
+		update url_pack
+		set original_url = #{originalUrl},
+			value_compressed = #{valueCompressed},
+			request_num = #{requestNum},
+			user_id = #{userId}
+		where id = #{id}
+	</update>
+	
+	<select id="findAll" resultType="UrlPack">
+		select id, original_url, value_compressed, request_num, user_id
+		from url_pack
+	</select>
+	
+	<select id="findByUser" resultType="UrlPack">
+		select id, original_url, value_compressed, request_num, user_id
+		from url_pack
+		where user_id = #{id}
+	</select>
+	
+	<select id="findByValueCompressed" resultType="UrlPack">
+		select id, original_url, value_compressed, request_num, user_id
+		from url_pack
+		where value_compressed = #{valueCompressed}
+	</select>
+
+</mapper>	

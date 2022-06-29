@@ -1,4 +1,4 @@
-package jansegety.urlshortener.controller.jsondto;
+package jansegety.urlshortener.controller.responsedto;
 
 import jansegety.urlshortener.entity.UrlPack;
 import jansegety.urlshortener.util.UrlMaker;

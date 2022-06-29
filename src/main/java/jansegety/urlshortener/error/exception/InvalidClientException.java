@@ -4,5 +4,10 @@ import lombok.NoArgsConstructor;
 
 @NoArgsConstructor
 public class InvalidClientException extends RuntimeException{
-	public InvalidClientException(String message) {super(message);}
+	
+	public InvalidClientException(String message) {
+		super(message);
+	}
+	
 }
+

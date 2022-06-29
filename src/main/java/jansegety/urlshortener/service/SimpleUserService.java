@@ -2,6 +2,8 @@ package jansegety.urlshortener.service;
 
 import java.util.Optional;
 
+import javax.transaction.Transactional;
+
 import org.springframework.stereotype.Service;
 
 import jansegety.urlshortener.controller.form.LoginForm;
@@ -10,13 +12,14 @@ import jansegety.urlshortener.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 
 @Service
+@Transactional
 @RequiredArgsConstructor
 public class SimpleUserService implements UserService {
 	
 	private final UserRepository userRepository;
 	
 	@Override
-	public void save(User user) {
+	public void regist(User user) {
 		userRepository.save(user);
 	}
 	

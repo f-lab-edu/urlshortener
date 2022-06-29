@@ -37,4 +37,7 @@ out/
 .vscode/
 
 ### Properties ###
-application-dev.properties
+application-dev.yml
+
+### sql ###
+schema-h2.sql

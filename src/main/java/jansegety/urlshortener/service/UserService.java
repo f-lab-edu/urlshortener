@@ -10,7 +10,7 @@ import jansegety.urlshortener.entity.User;
 @Service
 public interface UserService {
 	
-	public void save(User user);
+	public void regist(User user);
 
 	public Optional<User> findById(Long id);
 

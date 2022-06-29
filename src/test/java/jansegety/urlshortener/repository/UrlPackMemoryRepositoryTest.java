@@ -8,10 +8,11 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import jansegety.urlshortener.entity.UrlPack;
+import jansegety.urlshortener.repository.memoryrepository.UrlPackMemoryRepository;
 
-class UrlPackMemorryRepositoryTest {
+class UrlPackMemoryRepositoryTest {
 	
-	UrlPackMemorryRepository repository = new UrlPackMemorryRepository();
+	UrlPackMemoryRepository repository = new UrlPackMemoryRepository();
 	
 	@Test
 	@DisplayName("id가 이미 할당된 UrlPack Entity가 저장되면 예외가 발생한다.")

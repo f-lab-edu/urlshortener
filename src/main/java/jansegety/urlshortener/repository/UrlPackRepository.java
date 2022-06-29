@@ -1,18 +1,20 @@
 package jansegety.urlshortener.repository;
 
 import java.util.List;
+import java.util.Optional;
 
-import org.springframework.stereotype.Repository;
+import org.apache.ibatis.annotations.Mapper;
 
 import jansegety.urlshortener.entity.UrlPack;
 import jansegety.urlshortener.entity.User;
 
-@Repository
+@Mapper
 public interface UrlPackRepository {
 
 	public void save(UrlPack urlPack);
+	public void update(UrlPack urlPack);
 	public List<UrlPack> findAll();
 	public List<UrlPack> findByUser(User user);
-	public void deleteAll();
+	public Optional<UrlPack> findByValueCompressed(String valueCompressed);
 	
 }
